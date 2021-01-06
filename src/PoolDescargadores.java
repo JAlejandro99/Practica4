@@ -15,20 +15,23 @@ public class PoolDescargadores implements Runnable{
     protected Thread runningThread = null;
     protected ExecutorService pool = Executors.newFixedThreadPool(3);
     protected String dominio;
-    public PoolDescargadores(int puerto, String dominio){
+    protected String directorio;
+    public PoolDescargadores(int puerto, String dominio, String directorio){
         this.puerto = puerto;
         this.dominio = dominio;
+        this.directorio = directorio;
     }
     public void run(){
         synchronized(this){
             this.runningThread = Thread.currentThread();
         }
-        Boolean terminar = false;
-        this.pool.execute(new Descargador(pool,terminar,dominio));
+        //Boolean terminar = false;
+        this.pool.execute(new Descargador(pool,dominio,directorio));
         //¿Cuándo detener?}
-        while(!terminar){}
-        System.out.println(terminar);
-        this.pool.shutdown();
+        //while(!terminar){
+            //if
+        //}
+        //this.pool.shutdown();
         System.out.println("El Domoinio especificado se ha terminado de descargar.");
     }
     public static void main(String[] args) {
@@ -36,7 +39,11 @@ public class PoolDescargadores implements Runnable{
         String dominio = "";
         Scanner entradaEscaner = new Scanner (System.in);
         dominio = entradaEscaner.nextLine ();
-        PoolDescargadores des = new PoolDescargadores(9000,dominio);
+        System.out.println("Escribe la carpeta en que lo quieres guardar");
+        String carpeta = "";
+        entradaEscaner = new Scanner (System.in);
+        carpeta = entradaEscaner.nextLine ();
+        PoolDescargadores des = new PoolDescargadores(9000,dominio,carpeta);
         new Thread(des,dominio).start();
     }
 }
