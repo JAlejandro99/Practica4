@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.DatagramSocket;
@@ -13,26 +14,28 @@ public class PoolDescargadores implements Runnable{
     protected int puerto = 9000;
     protected boolean detenido = false;
     protected Thread runningThread = null;
-    protected ExecutorService pool = Executors.newFixedThreadPool(3);
+    protected ExecutorService pool = Executors.newFixedThreadPool(100);
     protected String dominio;
     protected String directorio;
-    public PoolDescargadores(int puerto, String dominio, String directorio){
+    protected String posicion;
+    public PoolDescargadores(int puerto, String dominio, String directorio, String posicion){
         this.puerto = puerto;
         this.dominio = dominio;
         this.directorio = directorio;
+        this.posicion = posicion;
     }
     public void run(){
         synchronized(this){
             this.runningThread = Thread.currentThread();
         }
         //Boolean terminar = false;
-        this.pool.execute(new Descargador(pool,dominio,directorio));
+        this.pool.execute(new Descargador(pool,dominio,directorio,posicion));
         //¿Cuándo detener?}
         //while(!terminar){
             //if
         //}
         //this.pool.shutdown();
-        System.out.println("El Dominio especificado se ha terminado de descargar.");
+        //System.out.println("El Dominio especificado se ha terminado de descargar.");
     }
     public static void main(String[] args) {
         System.out.println("Escribe el Dominio que quieres descargar:");
@@ -43,7 +46,10 @@ public class PoolDescargadores implements Runnable{
         String carpeta = "";
         entradaEscaner = new Scanner (System.in);
         carpeta = entradaEscaner.nextLine ();
-        PoolDescargadores des = new PoolDescargadores(9000,dominio,carpeta);
+        File fichero = new File("");
+        String posicion = fichero.getAbsolutePath();
+        posicion = posicion.replace('\\','/');
+        PoolDescargadores des = new PoolDescargadores(9000,dominio,carpeta,posicion);
         new Thread(des,dominio).start();
     }
 }

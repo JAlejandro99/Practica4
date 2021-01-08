@@ -2,12 +2,16 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,11 +25,13 @@ public class Descargador implements Runnable{
     protected ExecutorService pool = Executors.newFixedThreadPool(3);
     protected String directorio;
     protected String ubicacion;
-    public Descargador(ExecutorService pool, String enlace, String directorio){
+    protected String posicion;
+    public Descargador(ExecutorService pool, String enlace, String directorio, String posicion){
         try {
             this.pool = pool;
             this.enlace = new URL(enlace);
             this.directorio = directorio;
+            this.posicion = posicion;
         } catch (MalformedURLException ex) {
             Logger.getLogger(Descargador.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -33,32 +39,30 @@ public class Descargador implements Runnable{
     public void run(){
         try {
             //Leer recurso
-            /*System.out.println(enlace.toString());
-            System.out.println("Nombre del recurso: "+rutaRecurso(enlace));
-            System.out.println("Ruta relativa: "+rutaRelativa(enlace));*/
-            BufferedReader bf = new BufferedReader(new InputStreamReader(enlace.openStream()));
             String nombre = (directorio+"/"+rutaRecurso(enlace)).replaceAll("%20"," ");
             //Identificar si ya tenemos la ruta creada
             File archivo = new File(nombre);
             if(!archivo.exists()){
                 crearDirectorio(enlace);
                 archivo.createNewFile();
-                BufferedWriter bw = new BufferedWriter(new FileWriter(archivo));
-                String cadena;
-                while((cadena = bf.readLine())!=null){
-                    bw.write(cadena+"\n");
+                URLConnection conn = enlace.openConnection();
+                conn.connect();
+                InputStream in = conn.getInputStream();
+                OutputStream out = new FileOutputStream(archivo);
+                int b = 0;
+                while (b != -1) {
+                  b = in.read();
+                  if (b != -1)
+                    out.write(b);
                 }
-                bf.close();
-                bw.close();
-                System.out.println("Archivo creado exitosamente");
+                out.close();
+                in.close();
+                //System.out.println("Archivo creado exitosamente");
                 if(nombre.endsWith(".html")){
                     enlaces = getURLS(nombre,enlace.getHost(),ubicacion);
-                    /*for(int i=0;i<enlaces.size();i++){
-                        System.out.println(enlaces.get(i).toString());
-                    }*/
                     for(int i=0;i<enlaces.size();i++){
                         //Correr hilos
-                        this.pool.execute(new Descargador(pool,enlaces.get(i).toString(),directorio));
+                        this.pool.execute(new Descargador(pool,enlaces.get(i).toString(),directorio,posicion));
                     }
                     eliminarDominios(nombre,enlace.getHost(),ubicacion);
                 }
@@ -72,9 +76,7 @@ public class Descargador implements Runnable{
         File dir = new File(ruta);
         this.ubicacion = ruta.substring(this.directorio.length());
         if (!dir.exists()) {
-            if (dir.mkdirs()) {
-                System.out.println("Directorio creado");
-            } else {
+            if (!dir.mkdirs()){
                 System.out.println("Error al crear directorio");
             }
         }
@@ -86,10 +88,9 @@ public class Descargador implements Runnable{
         if(aux>-1)
             ret = ret+enlace.getFile().substring(aux);
         //System.out.println("Ruta Nueva1: "+ret);
-        ret = ret.replaceAll(ubicacion.substring(1),"");
-        /*System.out.println("Ubicacion: "+ubicacion);
-        System.out.println("Ruta Nueva2: "+ret);*/
+        //ret = ret.replaceAll(ubicacion.substring(1),"");
         ret = ret.replaceAll("%20"," ");
+        ret = posicion+"/"+directorio+"/"+ret;
         return ret;
     }
     public String rutaRecurso(URL enlace){
@@ -242,13 +243,13 @@ public class Descargador implements Runnable{
                                             i+=1;
                                         }
                                         if(aux.startsWith("http")){
-                                            cadena2 = cadena2.replaceAll(aux,rutaNueva(new URL(aux)));
+                                            cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL(aux)));
                                         }else{
                                             //Agregarle el dominio
                                             if(aux.charAt(0)=='/'){
-                                                cadena2 = cadena2.replaceAll(aux,rutaNueva(new URL("http://"+dom+aux)));
+                                                cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL("http://"+dom+aux)));
                                             }else if(aux.charAt(0)!='?'){
-                                                cadena2 = cadena2.replaceAll(aux,rutaNueva(new URL("http://"+dom+ub+aux)));
+                                                cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL("http://"+dom+ub+aux)));
                                             }
                                         }
                                     }
