@@ -32,7 +32,7 @@ public class PoolDescargadores implements Runnable{
             //if
         //}
         //this.pool.shutdown();
-        System.out.println("El Domoinio especificado se ha terminado de descargar.");
+        System.out.println("El Dominio especificado se ha terminado de descargar.");
     }
     public static void main(String[] args) {
         System.out.println("Escribe el Dominio que quieres descargar:");
