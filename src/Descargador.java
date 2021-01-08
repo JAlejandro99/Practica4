@@ -32,9 +32,7 @@ public class Descargador implements Runnable{
             this.enlace = new URL(enlace);
             this.directorio = directorio;
             this.posicion = posicion;
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(Descargador.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        } catch (MalformedURLException ex) {}
     }
     public void run(){
         try {
@@ -58,7 +56,7 @@ public class Descargador implements Runnable{
                 out.close();
                 in.close();
                 //System.out.println("Archivo creado exitosamente");
-                if(nombre.endsWith(".html")){
+                if(nombre.endsWith(".html") || nombre.endsWith(".php")){
                     enlaces = getURLS(nombre,enlace.getHost(),ubicacion);
                     for(int i=0;i<enlaces.size();i++){
                         //Correr hilos
@@ -67,18 +65,14 @@ public class Descargador implements Runnable{
                     eliminarDominios(nombre,enlace.getHost(),ubicacion);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) {}
     }
     public void crearDirectorio(URL enlace){
         String ruta = this.directorio+'/'+rutaRelativa(enlace);
         File dir = new File(ruta);
         this.ubicacion = ruta.substring(this.directorio.length());
         if (!dir.exists()) {
-            if (!dir.mkdirs()){
-                System.out.println("Error al crear directorio");
-            }
+            dir.mkdirs();
         }
     }
     public String rutaNueva(URL enlace){
@@ -134,11 +128,13 @@ public class Descargador implements Runnable{
     }
     public boolean diferentesDominios(String dom1, String dom2){
         boolean b = true;
+        String aux1,aux2;
         try {
-            b = !dom1.equals(new URL(dom2).getHost());
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(Descargador.class.getName()).log(Level.SEVERE, null, ex);
-        }
+            aux1 = dom1.replaceFirst("www.","");
+            aux2 = new URL(dom2).getHost();
+            aux2 = aux2.replaceFirst("www.","");
+            b = !aux1.equals(aux2);
+        } catch (IOException ex) {}
         return b;
     }
     public ArrayList<URL> getURLS(String nombre, String dom, String ub){
@@ -155,35 +151,65 @@ public class Descargador implements Runnable{
                                 i=i+3;
                             else
                                 i=i+4;
-                            boolean seguir = true;
-                            while(cadena.charAt(i)!='='){
-                                if(cadena.charAt(i)!=' ')
+                            boolean seguir = true, seguir2 = true;
+                            while(seguir2){
+                                if(cadena.charAt(i)=='=')
+                                    seguir2 = false;
+                                else if(cadena.charAt(i)!=' '){
                                     seguir = false;
-                                i+=1;
-                            }
-                            i+=1;
-                            if(seguir){
-                                while(cadena.charAt(i)!='"'){
-                                    if(cadena.charAt(i)!=' ')
-                                        seguir = false;
-                                    i+=1;
+                                    seguir2 = false;
+                                }
+                                if(i>=cadena.length()){
+                                    seguir = false;
+                                    seguir2 = false;
                                 }
                                 i+=1;
+                            }
+                            //i+=1;
+                            if(seguir){
+                                seguir2 = true;
+                                while(seguir2){
+                                    if(cadena.charAt(i)=='"')
+                                        seguir2 = false;
+                                    else if(cadena.charAt(i)!=' '){
+                                        seguir = false;
+                                        seguir2 = false;
+                                    }
+                                    if(i>=cadena.length()){
+                                        seguir = false;
+                                        seguir2 = false;
+                                    }
+                                    i+=1;
+                                }
+                                //i+=1;
                                 if(seguir){
                                     String aux = "";
-                                    while(cadena.charAt(i)!='"'){
-                                        aux=aux+String.valueOf(cadena.charAt(i));
+                                    seguir = true;
+                                    seguir2 = true;
+                                    while(seguir2){
+                                        if(cadena.charAt(i)=='"')
+                                            seguir2 = false;
+                                        else
+                                            aux=aux+String.valueOf(cadena.charAt(i));
+                                        if(i>=cadena.length()){
+                                            seguir = false;
+                                            seguir2 = false;
+                                        }
                                         i+=1;
                                     }
-                                    if(aux.startsWith("http")){
-                                        if(!diferentesDominios(dom,aux))
-                                            ret.add(new URL(aux));
-                                    }else{
-                                        //Agregarle el dominio
-                                        if(aux.charAt(0)=='/')
-                                            ret.add(new URL("http://"+dom+aux));
-                                        else if(aux.charAt(0)!='?')
-                                            ret.add(new URL("http://"+dom+ub+aux));
+                                    if(seguir){
+                                        if(aux.startsWith("http")){
+                                            if(!diferentesDominios(dom,aux))
+                                                ret.add(new URL(aux));
+                                        }else{
+                                            //Agregarle el dominio
+                                            if(!aux.equals("")){
+                                                if(aux.charAt(0)=='/')
+                                                    ret.add(new URL("http://"+dom+aux));
+                                                else if(aux.charAt(0)!='?')
+                                                    ret.add(new URL("http://"+dom+ub+aux));
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -193,7 +219,6 @@ public class Descargador implements Runnable{
             }
             b.close();
         } catch (IOException e) {
-            e.printStackTrace();
             return ret;
         }
         return ret;
@@ -222,34 +247,65 @@ public class Descargador implements Runnable{
                                     i=i+3;
                                 else
                                     i=i+4;
-                                boolean seguir2 = true;
-                                while(cadena.charAt(i)!='='){
-                                    if(cadena.charAt(i)!=' ')
+                                boolean seguir2 = true,seguir3 = true;
+                                while(seguir3){
+                                    if(cadena.charAt(i)=='=')
+                                        seguir3 = false;
+                                    else if(cadena.charAt(i)!=' '){
                                         seguir2 = false;
-                                    i+=1;
-                                }
-                                i+=1;
-                                if(seguir2){
-                                    while(cadena.charAt(i)!='"'){
-                                        if(cadena.charAt(i)!=' ')
-                                            seguir2 = false;
-                                        i+=1;
+                                        seguir3 = false;
+                                    }
+                                    if(i>=cadena.length()){
+                                        seguir2 = false;
+                                        seguir3 = false;
                                     }
                                     i+=1;
+                                }
+                                //i+=1;
+                                if(seguir2){
+                                    seguir3 = true;
+                                    while(seguir3){
+                                        if(cadena.charAt(i)=='"')
+                                            seguir3 = false;
+                                        else if(cadena.charAt(i)!=' '){
+                                            seguir2 = false;
+                                            seguir3 = false;
+                                        }
+                                        if(i>=cadena.length()){
+                                            seguir2 = false;
+                                            seguir3 = false;
+                                        }
+                                        i+=1;
+                                    }
+                                    //i+=1;
                                     if(seguir2){
                                         String aux = "";
-                                        while(cadena.charAt(i)!='"'){
-                                            aux=aux+String.valueOf(cadena.charAt(i));
+                                        seguir2 = true;
+                                        seguir3 = true;
+                                        while(seguir3){
+                                            if(cadena.charAt(i)=='"')
+                                                seguir3 = false;
+                                            else
+                                                aux=aux+String.valueOf(cadena.charAt(i));
+                                            if(i>=cadena.length()){
+                                                seguir2 = false;
+                                                seguir3 = false;
+                                            }
                                             i+=1;
                                         }
-                                        if(aux.startsWith("http")){
-                                            cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL(aux)));
-                                        }else{
-                                            //Agregarle el dominio
-                                            if(aux.charAt(0)=='/'){
-                                                cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL("http://"+dom+aux)));
-                                            }else if(aux.charAt(0)!='?'){
-                                                cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL("http://"+dom+ub+aux)));
+                                        if(seguir2){
+                                            if(aux.startsWith("http")){
+                                                if(!diferentesDominios(dom,aux))
+                                                    cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL(aux)));
+                                            }else{
+                                                //Agregarle el dominio
+                                                if(!aux.equals("")){
+                                                    if(aux.charAt(0)=='/'){
+                                                        cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL("http://"+dom+aux)));
+                                                    }else if(aux.charAt(0)!='?'){
+                                                        cadena2 = cadena2.replaceFirst(aux,rutaNueva(new URL("http://"+dom+ub+aux)));
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -265,8 +321,6 @@ public class Descargador implements Runnable{
             arch.delete();
             escribir.close();
             temporal.renameTo(new File(nombre));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) {}
     }
 }
