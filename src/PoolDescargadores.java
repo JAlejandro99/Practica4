@@ -1,3 +1,11 @@
+/**
+*Materia: Aplicaciones para Comunicaciones en Red
+*Autores:
+*   Domínguez Reyes Jesús Alejandro
+*   Pérez Federico José Joel
+*Fecha: 13 de Enero de 2020
+*Práctica 4: Descargador de Dominios
+**/
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
